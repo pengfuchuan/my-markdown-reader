@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { parseMarkdown } from '../lib/markdown';
 import { buildTocTree, filterTocTree } from '../lib/toc';
 import type { ParseResult } from '../lib/markdown';
@@ -145,23 +146,77 @@ export function App() {
     window.location.reload();
   }, []);
 
-  // Export as PDF (uses browser print with print-optimized CSS)
-  const exportPDF = useCallback(() => {
+  // Export as PDF using jsPDF + html2canvas
+  const exportPDF = useCallback(async () => {
     setExportOpen(false);
-    window.print();
+    if (!contentRef.current) return;
+    setExporting(true);
+    try {
+      const el = contentRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 10; // mm
+      const usableWidth = imgWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let heightLeft = imgHeight;
+      let position = margin;
+
+      // First page
+      pdf.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        margin,
+        position,
+        usableWidth,
+        imgHeight
+      );
+      heightLeft -= usableHeight;
+
+      // Additional pages
+      while (heightLeft > 0) {
+        position = margin - (imgHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL('image/png'),
+          'PNG',
+          margin,
+          position,
+          usableWidth,
+          imgHeight
+        );
+        heightLeft -= usableHeight;
+      }
+
+      pdf.save('markdown-export.pdf');
+    } finally {
+      setExporting(false);
+    }
   }, []);
 
-  // Export as long image (PNG)
+  // Export as high-res long image (PNG)
   const exportImage = useCallback(async () => {
     setExportOpen(false);
     if (!contentRef.current) return;
     setExporting(true);
     try {
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2,
+      const el = contentRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 3,
         useCORS: true,
         backgroundColor: theme === 'dark' ? '#1c1c1e' : '#ffffff',
         logging: false,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
       });
       const link = document.createElement('a');
       link.download = 'markdown-export.png';
@@ -171,6 +226,12 @@ export function App() {
       setExporting(false);
     }
   }, [theme]);
+
+  // Print
+  const handlePrint = useCallback(() => {
+    setExportOpen(false);
+    window.print();
+  }, []);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -213,7 +274,7 @@ export function App() {
             </button>
             {exportOpen && (
               <div className="export-dropdown">
-                <button className="export-option" onClick={exportPDF}>
+                <button className="export-option" onClick={exportPDF} disabled={exporting}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -229,7 +290,16 @@ export function App() {
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
                   </svg>
-                  {exporting ? 'Exporting...' : 'Export as Image'}
+                  Export as Image
+                </button>
+                <div className="export-divider" />
+                <button className="export-option" onClick={handlePrint}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                    <polyline points="6 9 6 2 18 2 18 9" />
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                    <rect x="6" y="14" width="12" height="8" />
+                  </svg>
+                  Print
                 </button>
               </div>
             )}
@@ -258,7 +328,7 @@ export function App() {
         <div className="export-overlay">
           <div className="export-overlay-content">
             <div className="export-spinner" />
-            <span>Generating image...</span>
+            <span>Generating...</span>
           </div>
         </div>
       )}

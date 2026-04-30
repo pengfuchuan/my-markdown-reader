@@ -527,6 +527,12 @@ html, body, #root {
   cursor: not-allowed;
 }
 
+.export-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}
+
 .export-option svg {
   flex-shrink: 0;
   color: var(--text-secondary);
