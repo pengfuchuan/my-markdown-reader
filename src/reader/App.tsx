@@ -4,6 +4,8 @@ import { buildTocTree, filterTocTree } from '../lib/toc';
 import type { ParseResult } from '../lib/markdown';
 import type { TocNode } from '../lib/toc';
 import './styles/global.css';
+import 'highlight.js/styles/github.css';
+import 'highlight.js/styles/github-dark.css';
 
 type Theme = 'light' | 'dark';
 
@@ -56,7 +58,16 @@ export function App() {
 
         const res = await fetch(src);
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        const text = await res.text();
+        const buffer = await res.arrayBuffer();
+        let text = new TextDecoder('utf-8').decode(buffer);
+        // Fallback for GBK/GB2312 encoded Chinese files
+        if (/\ufffd/.test(text) && !/[\u4e00-\u9fff]/.test(text)) {
+          try {
+            text = new TextDecoder('gbk').decode(buffer);
+          } catch {
+            // Keep UTF-8 result if GBK decoding fails
+          }
+        }
 
         if (!text.trim()) {
           setParseResult(parseMarkdown('# Empty File\n\nThe file contains no content.'));
@@ -86,6 +97,29 @@ export function App() {
   useEffect(() => {
     setFilteredTree(filterTocTree(tocTree, searchQuery));
   }, [tocTree, searchQuery]);
+
+  // Scroll-spy: track active heading via IntersectionObserver
+  useEffect(() => {
+    if (!parseResult) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveHeadingId(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px' }
+    );
+
+    parseResult.headings.forEach((h) => {
+      const el = document.getElementById(h.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [parseResult]);
 
   // Scroll to heading
   const scrollToHeading = useCallback((id: string) => {

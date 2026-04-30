@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --sidebar-bg: #f8f9fa;
   --content-bg: #ffffff;
@@ -265,4 +269,15 @@ html, body, #root {
   background: var(--content-bg);
   color: var(--text-primary);
   cursor: pointer;
+}
+
+/* Light theme: use github highlight */
+:root .hljs {
+  background: var(--code-bg);
+}
+
+/* Dark theme: github-dark overrides */
+:root[data-theme="dark"] .hljs {
+  color: #c9d1d9;
+  background: #161b22;
 }
