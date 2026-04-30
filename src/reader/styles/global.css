@@ -69,6 +69,12 @@ html, body, #root {
   align-items: center;
 }
 
+.toolbar-right {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
 .toolbar-btn {
   display: inline-flex;
   align-items: center;
@@ -463,5 +469,181 @@ html, body, #root {
   }
   .loading::before {
     animation: none;
+  }
+}
+
+/* ── Export Dropdown ── */
+
+.export-menu {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--content-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 100;
+  animation: dropdown-in 0.12s ease-out;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.12s ease;
+}
+
+.export-option:hover {
+  background: var(--input-bg);
+}
+
+.export-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-option svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+/* ── Export Overlay ── */
+
+.export-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.export-overlay-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 28px;
+  background: var(--content-bg);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.export-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ── Print Styles ── */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .app {
+    height: auto;
+  }
+
+  .main {
+    display: block;
+    overflow: visible;
+  }
+
+  .content-area {
+    overflow: visible;
+    padding: 0;
+    flex: none;
+    width: 100%;
+  }
+
+  .content-inner {
+    max-width: 100%;
+  }
+
+  .markdown-body {
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    color: #000;
+    page-break-after: avoid;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2 {
+    border-bottom-color: #ccc;
+  }
+
+  .markdown-body pre {
+    border: 1px solid #ddd;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body blockquote {
+    border-left-color: #999;
+  }
+
+  .markdown-body table {
+    page-break-inside: avoid;
+  }
+
+  .markdown-body img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  .markdown-body a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #666;
+  }
+
+  .hljs {
+    background: #f5f5f5 !important;
+    color: #333 !important;
   }
 }
