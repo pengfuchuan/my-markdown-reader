@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Markdown Reader",
+  "version": "1.0.0",
+  "description": "A clean markdown reader",
+  "permissions": ["webNavigation", "storage"],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "icons": {}
+}
