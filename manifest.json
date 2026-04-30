@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A clean markdown reader",
   "permissions": ["webNavigation", "storage"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"

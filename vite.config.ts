@@ -8,6 +8,7 @@ export default defineConfig({
     react(),
     crx({ manifest }),
   ],
+  base: '',
   build: {
     rollupOptions: {
       input: {
