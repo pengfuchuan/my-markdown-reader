@@ -1,0 +1,13 @@
+:root[data-theme="dark"] {
+  --sidebar-bg: #1a1b1e;
+  --content-bg: #25262b;
+  --text-primary: #c1c2c5;
+  --text-secondary: #909296;
+  --text-muted: #adb5bd;
+  --accent: #5c7cfa;
+  --link: #74c0fc;
+  --border: #373a40;
+  --input-bg: #2c2e33;
+  --toc-active-bg: #1b3a5c;
+  --code-bg: #2c2e33;
+}
