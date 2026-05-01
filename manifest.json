@@ -2,12 +2,18 @@
   "manifest_version": 3,
   "name": "Markdown Reader",
   "version": "1.0.0",
-  "description": "A clean markdown reader",
-  "permissions": ["webNavigation", "storage"],
+  "description": "A clean, free Markdown reader for Chrome. Auto-renders .md files with syntax highlighting, KaTeX math, Mermaid diagrams, TOC navigation, file browser, themes, and PDF/image export. Open source by pengfuchuan.",
+  "permissions": ["webNavigation", "storage", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"
   },
-  "icons": {}
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  },
+  "homepage_url": "https://github.com/pengfuchuan/my-markdown-reader",
+  "author": "pengfuchuan"
 }

@@ -1,9 +1,20 @@
 {
-  "name": "my-markdown-reader",
+  "name": "markdown-reader",
   "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
+  "description": "A clean, free Chrome extension for reading Markdown files with syntax highlighting, math, diagrams, and more.",
+  "keywords": [
+    "markdown",
+    "reader",
+    "chrome-extension",
+    "highlight",
+    "katex",
+    "mermaid"
+  ],
+  "author": "pengfuchuan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pengfuchuan/my-markdown-reader"
   },
   "scripts": {
     "dev": "vite",
@@ -11,15 +22,13 @@
     "preview": "vite preview",
     "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "katex": "^0.16.45",
     "marked": "^18.0.2",
+    "mermaid": "^11.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
