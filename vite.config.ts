@@ -13,6 +13,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         reader: 'src/reader/index.html',
+        'mermaid-renderer': 'src/mermaid-renderer/index.html',
       },
     },
   },
