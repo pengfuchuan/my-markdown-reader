@@ -38,7 +38,7 @@ html {
   --hr-color: #e0e0e5;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --content-max-width: 720px;
+  --content-max-width: 780px;
 }
 
 html, body, #root {
@@ -1025,6 +1025,11 @@ html, body, #root {
 .export-option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.export-option.active {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .export-divider {
