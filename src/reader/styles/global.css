@@ -605,43 +605,137 @@ html, body, #root {
 
 .markdown-body .mermaid-wrapper {
   margin: 0 0 1.15em;
-  text-align: center;
-  overflow-x: auto;
-  padding: 16px;
-  background: var(--code-bg);
-  border: 1px solid var(--code-border);
+  border: 1px solid var(--border);
   border-radius: 10px;
+  overflow: hidden;
+  background: var(--content-bg);
 }
 
-.markdown-body .mermaid {
+.markdown-body .mermaid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-body .mermaid-header .code-lang {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.markdown-body .mermaid-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.markdown-body .mermaid-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--text-secondary);
   background: transparent;
   border: none;
-  padding: 0;
-  margin: 0;
-  box-shadow: none;
-  font-family: monospace;
-  white-space: pre;
-  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0.6;
 }
 
-.markdown-body .mermaid svg {
+.markdown-body .mermaid-copy-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.markdown-body .mermaid-copy-btn.copied {
+  color: #22c55e;
+  opacity: 1;
+}
+
+.markdown-body .mermaid-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  font-family: inherit;
+}
+
+.markdown-body .mermaid-toggle-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.markdown-body .mermaid-source {
+  overflow-x: auto;
+  padding: 12px 16px;
+  background: var(--code-bg);
+}
+
+.markdown-body .mermaid-source pre {
+  margin: 0;
+}
+
+.markdown-body .mermaid-source code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #adbac7;
+  white-space: pre;
+}
+
+/* Default: show source, hide diagram */
+.markdown-body .mermaid-diagram {
+  display: none;
+  padding: 24px 16px;
+  text-align: center;
+  overflow-x: auto;
+  background: #fff;
+}
+
+/* Diagram mode: hide source, show diagram */
+.markdown-body .mermaid-wrapper[data-mode="diagram"] .mermaid-source {
+  display: none;
+}
+
+.markdown-body .mermaid-wrapper[data-mode="diagram"] .mermaid-diagram {
+  display: block;
+}
+
+.markdown-body .mermaid-diagram svg {
   max-width: 100%;
   height: auto;
 }
 
+.markdown-body .mermaid-loading {
+  padding: 32px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 .markdown-body .mermaid-error {
-  color: var(--text-muted);
+  padding: 16px;
+  color: #f85149;
   font-size: 0.85em;
+  text-align: center;
 }
 
 .markdown-body .mermaid-error p {
-  margin: 0 0 8px;
-}
-
-.markdown-body .mermaid-error pre {
-  text-align: left;
-  font-size: 0.85em;
-  opacity: 0.7;
+  margin: 0;
 }
 
 /* ── Alert / Callout Blocks ── */

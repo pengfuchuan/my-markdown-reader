@@ -66,15 +66,30 @@ function renderMath(tex: string, displayMode: boolean): string {
   }
 }
 
-// ── Mermaid rendering (deferred to App.tsx via mermaid.run()) ──
+// ── Mermaid diagram placeholder (rendered via iframe in App.tsx) ──
 
 let mermaidId = 0;
 
 function renderMermaid(code: string): string {
   const id = `mermaid-${mermaidId++}`;
-  // Use data-raw to store the unescaped source for mermaid.run()
   const raw = escapeAttr(code);
-  return `<div class="mermaid-wrapper" id="${id}"><div class="mermaid" data-raw="${raw}">${escapeHtml(code)}</div></div>`;
+  const source = escapeHtml(code);
+  return `<div class="mermaid-wrapper" id="${id}" data-raw="${raw}">
+  <div class="mermaid-header">
+    <span class="code-lang">Mermaid</span>
+    <div class="mermaid-actions">
+      <button class="mermaid-copy-btn" data-code="${raw}" title="Copy source">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="mermaid-toggle-btn" title="Toggle diagram view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Show Diagram</span>
+      </button>
+    </div>
+  </div>
+  <div class="mermaid-source"><pre><code>${source}</code></pre></div>
+  <div class="mermaid-diagram"></div>
+</div>`;
 }
 
 // ── Inline math extension: $...$ ──

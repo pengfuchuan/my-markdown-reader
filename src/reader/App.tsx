@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import mermaid from 'mermaid';
 import { parseMarkdown } from '../lib/markdown';
+import { renderMermaidSvg } from '../lib/mermaidRenderer';
 import { buildTocTree, filterTocTree } from '../lib/toc';
 import { openFile, openDirectory, readFileContent, restoreLastDirectory, restoreLastFile, storeFileName, isMarkdownFile } from '../lib/fileSystem';
 import type { ParseResult } from '../lib/markdown';
@@ -30,6 +30,7 @@ export function App() {
   const contentRef = useRef<HTMLDivElement>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const markdownBodyRef = useRef<HTMLDivElement>(null);
   const [showBackTop, setShowBackTop] = useState(false);
 
   // File tree state
@@ -67,18 +68,33 @@ export function App() {
     if (!el) return;
 
     function handleClick(e: MouseEvent) {
-      const btn = (e.target as HTMLElement).closest('.code-copy-btn') as HTMLButtonElement | null;
-      if (!btn) return;
-      const code = btn.getAttribute('data-code');
-      if (!code) return;
-      navigator.clipboard.writeText(code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')).then(() => {
-        btn.classList.add('copied');
-        btn.title = 'Copied!';
-        setTimeout(() => {
-          btn.classList.remove('copied');
-          btn.title = 'Copy';
-        }, 2000);
-      });
+      // Code block copy button
+      const codeBtn = (e.target as HTMLElement).closest('.code-copy-btn') as HTMLButtonElement | null;
+      if (codeBtn) {
+        const code = codeBtn.getAttribute('data-code');
+        if (code) {
+          navigator.clipboard.writeText(code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')).then(() => {
+            codeBtn.classList.add('copied');
+            codeBtn.title = 'Copied!';
+            setTimeout(() => { codeBtn.classList.remove('copied'); codeBtn.title = 'Copy'; }, 2000);
+          });
+        }
+        return;
+      }
+
+      // Mermaid copy button
+      const mermaidBtn = (e.target as HTMLElement).closest('.mermaid-copy-btn') as HTMLButtonElement | null;
+      if (mermaidBtn) {
+        const code = mermaidBtn.getAttribute('data-code');
+        if (code) {
+          navigator.clipboard.writeText(code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')).then(() => {
+            mermaidBtn.classList.add('copied');
+            mermaidBtn.title = 'Copied!';
+            setTimeout(() => { mermaidBtn.classList.remove('copied'); mermaidBtn.title = 'Copy source'; }, 2000);
+          });
+        }
+        return;
+      }
     }
 
     el.addEventListener('click', handleClick);
@@ -308,48 +324,84 @@ export function App() {
     return () => area.removeEventListener('scroll', update);
   }, [parseResult]);
 
-  // Render Mermaid diagrams after content changes
-  useEffect(() => {
-    if (!parseResult || !contentRef.current) return;
-    const mermaidEls = contentRef.current.querySelectorAll('.mermaid');
-    if (mermaidEls.length === 0) return;
+  // Per-block mermaid state: id → mode
+  const mermaidModesRef = useRef<Map<string, 'source' | 'diagram'>>(new Map());
+  // SVG cache: id → svg string
+  const mermaidCacheRef = useRef<Map<string, string>>(new Map());
 
-    (async () => {
-      try {
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: 'default',
-          securityLevel: 'loose',
-          htmlLabels: false,
-        });
+  // Restore mermaid state after React re-renders (runs before browser paint)
+  useLayoutEffect(() => {
+    const body = markdownBodyRef.current;
+    if (!body) return;
+    const modes = mermaidModesRef.current;
+    if (modes.size === 0) return;
 
-        for (const el of Array.from(mermaidEls)) {
-          const source = (el as HTMLElement).getAttribute('data-raw') || (el as HTMLElement).textContent || '';
-          const wrapper = el.closest('.mermaid-wrapper');
-          const id = `mmd-svg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    for (const [id, mode] of modes) {
+      const wrapper = document.getElementById(id);
+      if (!wrapper) continue;
+      wrapper.setAttribute('data-mode', mode);
+      const label = wrapper.querySelector('.mermaid-toggle-btn span');
+      if (label) label.textContent = mode === 'diagram' ? 'Show Source' : 'Show Diagram';
 
-          try {
-            // Don't pass a container — let mermaid create elements directly in <body>
-            // so internal getDiagramElement() can find them via select("body")
-            const { svg } = await mermaid.render(id, source);
-
-            // Clean up elements mermaid left in <body>
-            document.getElementById(id)?.remove();
-            document.getElementById('d' + id)?.remove();
-
-            if (wrapper) wrapper.innerHTML = svg;
-          } catch (err) {
-            console.error('[Mermaid] Render error:', err);
-            // Clean up on error too
-            document.getElementById(id)?.remove();
-            document.getElementById('d' + id)?.remove();
-            if (wrapper) wrapper.innerHTML = `<div class="mermaid-error"><p>Diagram rendering failed</p><pre>${source}</pre></div>`;
-          }
+      if (mode === 'diagram') {
+        const diagramEl = wrapper.querySelector('.mermaid-diagram') as HTMLElement;
+        if (diagramEl && !diagramEl.querySelector('svg')) {
+          const cached = mermaidCacheRef.current.get(id);
+          if (cached) diagramEl.innerHTML = cached;
         }
-      } catch (err) {
-        console.error('[Mermaid] Init error:', err);
       }
-    })();
+    }
+  });
+
+  // Mermaid toggle — event delegation, per-block
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    async function handleClick(e: MouseEvent) {
+      const btn = (e.target as HTMLElement).closest('.mermaid-toggle-btn') as HTMLButtonElement | null;
+      if (!btn) return;
+
+      const wrapper = btn.closest('.mermaid-wrapper') as HTMLElement | null;
+      if (!wrapper) return;
+
+      const id = wrapper.id;
+      const current = wrapper.getAttribute('data-mode') || 'source';
+      const next = current === 'source' ? 'diagram' : 'source';
+
+      wrapper.setAttribute('data-mode', next);
+      mermaidModesRef.current.set(id, next);
+
+      const label = btn.querySelector('span');
+      if (label) label.textContent = next === 'diagram' ? 'Show Source' : 'Show Diagram';
+
+      if (next === 'diagram') {
+        const diagramEl = wrapper.querySelector('.mermaid-diagram') as HTMLElement;
+        if (!diagramEl) return;
+
+        const cached = mermaidCacheRef.current.get(id);
+        if (cached) {
+          diagramEl.innerHTML = cached;
+          return;
+        }
+
+        diagramEl.innerHTML = '<div class="mermaid-loading">Rendering diagram...</div>';
+        const raw = wrapper.getAttribute('data-raw') || '';
+        const source = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+
+        try {
+          const svg = await renderMermaidSvg(source);
+          mermaidCacheRef.current.set(id, svg);
+          diagramEl.innerHTML = svg;
+        } catch (err) {
+          console.error('[Mermaid] Render error:', err);
+          diagramEl.innerHTML = `<div class="mermaid-error"><p>${err instanceof Error ? err.message : 'Unknown error'}</p></div>`;
+        }
+      }
+    }
+
+    el.addEventListener('click', handleClick);
+    return () => el.removeEventListener('click', handleClick);
   }, [parseResult]);
 
   const scrollToHeading = useCallback((id: string) => {
@@ -670,6 +722,7 @@ export function App() {
           <div className="content-inner" ref={contentRef}>
             {parseResult && (
               <div
+                ref={markdownBodyRef}
                 className="markdown-body"
                 dangerouslySetInnerHTML={{ __html: parseResult.html }}
               />
