@@ -9,6 +9,7 @@
 
 let iframe: HTMLIFrameElement | null = null;
 let initPromise: Promise<void> | null = null;
+let lastTheme: string | null = null;
 const pending = new Map<string, { resolve: (svg: string) => void; reject: (err: Error) => void }>();
 
 function handleMessage(event: MessageEvent) {
@@ -58,11 +59,19 @@ function ensureIframe(): Promise<void> {
   return initPromise;
 }
 
-export async function renderMermaidSvg(source: string): Promise<string> {
+export async function renderMermaidSvg(source: string, theme?: string): Promise<string> {
   await ensureIframe();
 
   if (!iframe?.contentWindow) {
     throw new Error('Mermaid renderer not available');
+  }
+
+  // Sync theme to iframe if changed
+  if (theme && theme !== lastTheme) {
+    lastTheme = theme;
+    iframe.contentWindow.postMessage({ type: 'set-theme', theme }, '*');
+    // Small delay for mermaid re-initialization
+    await new Promise(r => setTimeout(r, 100));
   }
 
   const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

@@ -13,6 +13,15 @@ import 'highlight.js/styles/github-dark.css';
 import 'katex/dist/katex.min.css';
 
 type Theme = 'light' | 'dark';
+type ContentWidth = 640 | 720 | 780 | 860 | 960;
+
+const WIDTH_OPTIONS: { value: ContentWidth; label: string }[] = [
+  { value: 640, label: 'Narrow' },
+  { value: 720, label: 'Medium' },
+  { value: 780, label: 'Default' },
+  { value: 860, label: 'Wide' },
+  { value: 960, label: 'Full' },
+];
 
 export function App() {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -26,10 +35,16 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [widthOpen, setWidthOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [contentWidth, setContentWidth] = useState<ContentWidth>(() => {
+    const saved = localStorage.getItem('md-reader-width');
+    return (WIDTH_OPTIONS.find(o => o.value === Number(saved))?.value ?? 780) as ContentWidth;
+  });
   const contentRef = useRef<HTMLDivElement>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const widthMenuRef = useRef<HTMLDivElement>(null);
   const markdownBodyRef = useRef<HTMLDivElement>(null);
   const [showBackTop, setShowBackTop] = useState(false);
 
@@ -61,6 +76,11 @@ export function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Apply content width
+  useEffect(() => {
+    document.documentElement.style.setProperty('--content-max-width', `${contentWidth}px`);
+  }, [contentWidth]);
 
   // Code copy button — event delegation on content area
   useEffect(() => {
@@ -112,16 +132,19 @@ export function App() {
     return () => area.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close export menu on outside click
+  // Close dropdown menus on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportOpen(false);
       }
+      if (widthMenuRef.current && !widthMenuRef.current.contains(e.target as Node)) {
+        setWidthOpen(false);
+      }
     }
-    if (exportOpen) document.addEventListener('mousedown', handleClick);
+    if (exportOpen || widthOpen) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [exportOpen]);
+  }, [exportOpen, widthOpen]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
@@ -329,6 +352,36 @@ export function App() {
   // SVG cache: id → svg string
   const mermaidCacheRef = useRef<Map<string, string>>(new Map());
 
+  // Re-render mermaid diagrams when theme changes
+  useEffect(() => {
+    const body = markdownBodyRef.current;
+    if (!body) return;
+
+    // Find all diagrams currently in 'diagram' mode
+    const wrappers = body.querySelectorAll('.mermaid-wrapper[data-mode="diagram"]');
+    if (wrappers.length === 0) return;
+
+    // Clear cache so re-renders use new theme
+    mermaidCacheRef.current.clear();
+
+    for (const wrapper of wrappers) {
+      const id = wrapper.id;
+      const diagramEl = wrapper.querySelector('.mermaid-diagram') as HTMLElement;
+      if (!diagramEl) continue;
+
+      const raw = wrapper.getAttribute('data-raw') || '';
+      const source = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+
+      diagramEl.innerHTML = '<div class="mermaid-loading">Rendering diagram...</div>';
+      renderMermaidSvg(source, theme).then(svg => {
+        mermaidCacheRef.current.set(id, svg);
+        diagramEl.innerHTML = svg;
+      }).catch(err => {
+        diagramEl.innerHTML = `<div class="mermaid-error"><p>${err instanceof Error ? err.message : 'Unknown error'}</p></div>`;
+      });
+    }
+  }, [theme]);
+
   // Restore mermaid state after React re-renders (runs before browser paint)
   useLayoutEffect(() => {
     const body = markdownBodyRef.current;
@@ -390,7 +443,7 @@ export function App() {
         const source = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
 
         try {
-          const svg = await renderMermaidSvg(source);
+          const svg = await renderMermaidSvg(source, theme);
           mermaidCacheRef.current.set(id, svg);
           diagramEl.innerHTML = svg;
         } catch (err) {
@@ -402,7 +455,7 @@ export function App() {
 
     el.addEventListener('click', handleClick);
     return () => el.removeEventListener('click', handleClick);
-  }, [parseResult]);
+  }, [parseResult, theme]);
 
   const scrollToHeading = useCallback((id: string) => {
     setActiveHeadingId(id);
@@ -633,6 +686,40 @@ export function App() {
                   </svg>
                   Print
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Content width */}
+          <div className="export-menu" ref={widthMenuRef}>
+            <button
+              className="toolbar-btn"
+              title="Content width"
+              aria-label="Content width"
+              onClick={() => setWidthOpen((v) => !v)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            </button>
+            {widthOpen && (
+              <div className="export-dropdown">
+                {WIDTH_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`export-option${contentWidth === opt.value ? ' active' : ''}`}
+                    onClick={() => {
+                      setContentWidth(opt.value);
+                      localStorage.setItem('md-reader-width', String(opt.value));
+                      setWidthOpen(false);
+                    }}
+                  >
+                    {opt.label} ({opt.value}px)
+                  </button>
+                ))}
               </div>
             )}
           </div>

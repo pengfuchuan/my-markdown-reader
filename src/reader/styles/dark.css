@@ -24,7 +24,7 @@
   --hr-color: #38383a;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --content-max-width: 720px;
+  --content-max-width: 780px;
 }
 
 /* Mermaid diagram area keeps light bg for SVG readability */
