@@ -4,10 +4,14 @@ node_modules/
 # Build output
 dist/
 *.zip
+markdown-reader-v*/
 
 # Logs
 *.log
 npm-debug.log*
+
+# Test
+coverage/
 
 # OS files
 .DS_Store
